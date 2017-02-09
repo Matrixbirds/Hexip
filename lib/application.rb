@@ -3,6 +3,12 @@ require_relative 'abstract_application'
 module Lib
   class Application < AbstractApplication
 
+    def self.instance
+      @instance ||= Rack::Builder.new do
+        run Lib::Application.new
+      end.to_app
+    end
+
     post '/articles' do |env|
       [201, {'Content-Type' => 'text/plain'}, ['Posted']]
     end

@@ -34,9 +34,12 @@ module Lib
         path, action = [*@@routes[verb]&.select do |path, _|
           match(path, uri)
         end]&.flatten
-        -> { [404, {'Content-Type' => 'text/plain'}, 'Not Found'] } unless action&.respond_to?(:call)
-        pattern = match(path, uri)
-        new_req = generate_request_object(req, pattern)
+        unless path or action&.respond_to?(:call)
+          action = proc { [404, {'Content-Type' => 'text/plain'}, ['Not Found']] }
+        else
+          pattern = match(path, uri)
+          new_req = generate_request_object(req, pattern)
+        end
         action.call new_req
       end
 
