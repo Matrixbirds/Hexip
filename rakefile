@@ -13,3 +13,79 @@ namespace :server do
     `bundle exec rackup app.ru -p #{port} --host #{ipaddr} > 1`
   end
 end
+
+require 'active_record'
+
+namespace :db do
+  require 'yaml'
+  db_config = YAML::load(File.open("./config/database.yml"))
+  db_admin = db_config.merge({'schema_search_path' => 'public'})
+
+  desc "Create the database"
+  task :create do
+    ActiveRecord::Base.establish_connection(db_admin)
+    ActiveRecord::Base.connection
+    puts "Database created."
+  end
+
+  desc "Migrate the database"
+  task :migrate do
+    ActiveRecord::Base.establish_connection(db_admin)
+    ActiveRecord::Migrator.migrate("db/migrates/")
+    Rake::Task["db:schema"].invoke
+    puts "Database migrated."
+  end
+
+  desc "Drop the database"
+  task :drop do
+    begin
+      ActiveRecord::Base.establish_connection(db_admin)
+      FileUtils.rm(Pathname.new(db_admin['database']))
+      puts "Drop the database."
+    rescue => ex
+      puts "#{db_admin['database']} not found"
+    end
+  end
+
+  desc "Reset the database"
+  task :reset => [:drop, :create, :migrate]
+
+  desc "Create a db/schema.rb file"
+  task :schema do
+    ActiveRecord::Base.establish_connection(db_config)
+    require 'active_record/schema_dumper'
+    filename = "db/schema.rb"
+    File.open(filename, "w:utf-8") do |file|
+      ActiveRecord::SchemaDumper.dump(ActiveRecord::Base.connection, file)
+    end
+  end
+end
+
+namespace :generate do
+  desc "generate db migration"
+  task :migration do
+    begin
+      name = ARGV[1] || raise("Specify name: rake generate:migration your_migration")
+      timestamp = Time.now.strftime("%Y%m%d%H%M%S")
+      path = File.expand_path("./db/migrates/#{timestamp}_#{name}.rb", File.dirname(__FILE__))
+      migration_class = name.split("_").map(&:capitalize).join
+
+      File.open(path, 'w') do |file|
+        file.write <<-EOF
+class #{migration_class} < ActiveRecord::Migration[5.0]
+  def change
+    create_table :#{name} do |t|
+      t.timestamps
+    end
+  end
+end
+      EOF
+      end
+
+      puts "Migration #{path} created"
+      abort
+    rescue => ex
+      puts ex
+    end
+  end
+end

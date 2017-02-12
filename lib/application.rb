@@ -45,7 +45,6 @@ module Lib
     end
 
     get '/404' do |ctx|
-      debugger
       [404, {'Content-Type' => 'text/plain'}, ['Hello']]
     end
 

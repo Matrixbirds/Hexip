@@ -1,3 +1,3 @@
-ENV['RACK_ENV'] ||= 'test'
+ENV['RACK_ENV'] ||= 'development'
 
 require_relative 'application'
