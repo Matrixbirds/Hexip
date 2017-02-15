@@ -74,9 +74,9 @@ namespace :generate do
         file.write <<-EOF
 class #{migration_class} < ActiveRecord::Migration[5.0]
   def change
-    create_table :#{name} do |t|
-      t.timestamps
-    end
+#   create_table :#{name} do |t|
+#     t.timestamps
+#   end
   end
 end
       EOF

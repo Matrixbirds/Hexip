@@ -3,6 +3,9 @@ $LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'app'))
 $LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'app/models'))
 $LOAD_PATH.unshift(File.dirname(__FILE__))
 
+require 'model_initializer'
+include ModelInitializer
+
 class << self
   def setup_db_connection
     require 'yaml'
@@ -19,6 +22,6 @@ Bundler.require :default, ENV['RACK_ENV']
 require 'byebug' if ['test', 'development'].include? ENV['RACK_ENV']
 
 setup_db_connection
-require 'article'
+load_models
 
 require_relative '../lib'
