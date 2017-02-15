@@ -9,48 +9,22 @@ module Lib
       end.to_app
     end
 
-    get '/login' do |ctx|
-      oauth_uri = 'https://github.com/login/oauth/authorize?'
-      {
-        client_id: client_id,
-        redirect_uri: URI::encode('http://localhost:3000/callback'),
-        scope: 'user',
-        allow_signup: true,
-        state: nil
-      }.each do |k, v|
-        oauth_uri += "#{k}=#{v}&"
-      end
-      [302, {'Location' => oauth_uri}, []]
-    end
+    get '/articles', &ArticlesApi.instance.method(:index)
+    get '/articles/:id', &ArticlesApi.instance.method(:show)
+    get '/login', &LoginApi.instance.method(:login)
+    get '/callback/:code', &LoginApi.instance.method(:callback)
 
-    get '/callback' do |ctx|
-      session_code = ctx.req.params&.dig('code')
-      result = RestClient.post('https://github.com/login/oauth/access_token',
-                               {client_id: client_id,
-                                client_secret: secrets_key,
-                                code: session_code},
-                                {accept: :json})
-      access_token = JSON.parse(result)['access_token']
-      user_info = JSON.parse(RestClient.get('https://api.github.com/user',
-                                          {params: {access_token: access_token},
-                                          accept: :json}))
-      puts user_info
-      [302, {'Location' => '/'}, []]
-    end
-
-    get '/articles/:id' do |ctx|
-      puts env.params
-      puts env.req
-      [200, {'Content-Type' => 'text/plain'}, ['Hello']]
-    end
-
-    get '/404' do |ctx|
-      [404, {'Content-Type' => 'text/plain'}, ['Hello']]
-    end
+    get '/404', &proc {|ctx, params = ctx.req.params|
+      [404, {'Content-Type' => 'text/plain'}, ['Not Found']]
+    }
 
     def proc(env)
       @request = Rack::Request.new(env)
       Application.find_action @request
+    rescue ActiveRecord::RecordNotFound => not_found
+      [404, {'Content-Type' => 'application/json'}, ["#{not_found}"]]
+    rescue => err
+      [500, {'Content-Type' => 'application/json'}, ["#{err}"]]
     end
 
     on_call

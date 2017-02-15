@@ -31,7 +31,7 @@ module Lib
 
       def find_action(req)
         uri, verb = serialize_request(req)
-        path, action = [*@@routes[verb]&.select do |path, _|
+        path, action = [*@@routes[verb]&.reverse&.select do |path, _|
           match(path, uri)
         end]&.flatten
         unless path or action&.respond_to?(:call)
@@ -55,7 +55,7 @@ module Lib
 
       def generate_request_object(req, pattern)
         u = OpenStruct.new
-        u.params = Hash[pattern&.names&.zip(pattern&.captures)]
+        req.params.merge! Hash[pattern&.names&.zip(pattern&.captures)]
         u.req = req
         u
       end
