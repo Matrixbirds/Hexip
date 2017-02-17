@@ -7,7 +7,6 @@ class LoginApi
   def self.instance
     @instance ||= new
   end
-  
 
   def login(_ctx, params=_ctx.req.params)
     oauth_uri = 'https://github.com/login/oauth/authorize?'

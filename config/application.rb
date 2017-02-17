@@ -10,8 +10,9 @@ require 'boot'
 
 Bundler.require :default, ENV['RACK_ENV']
 
-require 'byebug' if ['test', 'development'].include? ENV['RACK_ENV']
+if ['test', 'development'].include? ENV['RACK_ENV']
+  require 'byebug'
+  require 'factory_girl'
+end
 
 load_modules
-
-require_relative '../lib'

@@ -24,7 +24,7 @@ module AppInitializer
   end
 
   def setup_db_connection
-    db_config = YAML::load_file(File.join(File.dirname(__FILE__), 'database.yml'))
+    db_config = YAML::load_file(File.join(File.dirname(__FILE__), 'database.yml'))[ENV['RACK_ENV']]
     ActiveRecord::Base.establish_connection(db_config)
   end
 end

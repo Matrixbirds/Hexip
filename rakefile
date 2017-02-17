@@ -14,23 +14,40 @@ namespace :server do
   end
 end
 
+
 require 'active_record'
+require 'byebug'
+
+def env
+  ENV['RACK_ENV'] ||= 'development'
+end
+def config
+  require 'yaml'
+  @config ||= YAML::load(File.open("./config/database.yml"))
+end
+
+def load_config(_env=env)
+  @db_config = config[_env].merge({'schema_search_path' => 'public'})
+end
 
 namespace :db do
-  require 'yaml'
-  db_config = YAML::load(File.open("./config/database.yml"))
-  db_admin = db_config.merge({'schema_search_path' => 'public'})
+
+  task :env do
+    puts "use #{ENV['RACK_ENV']}"
+  end
 
   desc "Create the database"
   task :create do
-    ActiveRecord::Base.establish_connection(db_admin)
-    ActiveRecord::Base.connection
-    puts "Database created."
+    %w[test development].each do |_env|
+      ActiveRecord::Base.establish_connection load_config(_env)
+      ActiveRecord::Base.connection
+      puts "Database created #{env}."
+    end
   end
 
   desc "Migrate the database"
-  task :migrate do
-    ActiveRecord::Base.establish_connection(db_admin)
+  task :migrate, :env do |cmd, args|
+    ActiveRecord::Base.establish_connection load_config(args.env || env)
     ActiveRecord::Migrator.migrate("db/migrates/")
     Rake::Task["db:schema"].invoke
     puts "Database migrated."
@@ -39,11 +56,13 @@ namespace :db do
   desc "Drop the database"
   task :drop do
     begin
-      ActiveRecord::Base.establish_connection(db_admin)
-      FileUtils.rm(Pathname.new(db_admin['database']))
-      puts "Drop the database."
+      %w[test development].each do |_env|
+        db = load_config(_env)['database']
+        FileUtils.rm(Pathname.new(db))
+        puts "Drop database: #{db}."
+      end
     rescue => ex
-      puts "#{db_admin['database']} not found"
+      puts "#{ex}"
     end
   end
 
@@ -52,7 +71,7 @@ namespace :db do
 
   desc "Create a db/schema.rb file"
   task :schema do
-    ActiveRecord::Base.establish_connection(db_config)
+    ActiveRecord::Base.establish_connection load_config
     require 'active_record/schema_dumper'
     filename = "db/schema.rb"
     File.open(filename, "w:utf-8") do |file|
