@@ -7,6 +7,7 @@ module AppInitializer
     setup_db_connection
     load_models
     load_apis
+    load_app
   end
 
   def load_models
@@ -21,6 +22,10 @@ module AppInitializer
 
   def load_apis
     APIS.each &proc{ |api| require api }
+  end
+
+  def load_app
+    require File.join(File.dirname(__FILE__), '../lib/application')
   end
 
   def setup_db_connection
